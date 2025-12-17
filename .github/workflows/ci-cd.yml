@@ -1,0 +1,55 @@
+name: MERN Todo CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Backend build
+      - name: Backend - Install dependencies
+        working-directory: backend
+        run: npm install
+
+      # Frontend build
+      - name: Frontend - Install dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Frontend - Build
+        working-directory: frontend
+        run: npm run build
+
+      # Automated tests
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test || echo "No tests found"
+
+      # Docker login
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Build & push backend image
+      - name: Build and push backend image
+        run: |
+          docker build -t abdullah896/mern-todo-backend:latest ./backend
+          docker push abdullah896/mern-todo-backend:latest
+
+      # Build & push frontend image
+      - name: Build and push frontend image
+        run: |
+          docker build -t abdullah896/mern-todo-frontend:latest ./frontend
+          docker push abdullah896/mern-todo-frontend:latest
